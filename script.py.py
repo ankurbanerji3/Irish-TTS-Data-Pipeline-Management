@@ -28,11 +28,15 @@ def convert_mp4_to_wav(input_file, output_file):
     subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def download_audio_from_youtube(url, output_path='.'):
-    yt = YouTube(url)
-    audio_stream = yt.streams.filter(only_audio=True).first()
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    return audio_stream.download(output_path=output_path)
+    try:
+      yt = YouTube(url)
+      audio_stream = yt.streams.filter(only_audio=True).first()
+      if not os.path.exists(output_path):
+          os.makedirs(output_path)
+      return audio_stream.download(output_path=output_path)
+    except Exception as e:
+      print("cannot download due to",e)
+      return None
 
 
 youtube = build('youtube', 'v3', developerKey='AIzaSyCcU1pgi8WKPFHqzflMTETTrVkoelmGfqE')
@@ -41,7 +45,7 @@ youtube = build('youtube', 'v3', developerKey='AIzaSyCcU1pgi8WKPFHqzflMTETTrVkoe
 search_response = youtube.search().list(
     q='Gaeilge',
     part='id,snippet',
-    maxResults=1,
+    maxResults=10,
     type='video',
 ).execute()
 
@@ -60,7 +64,8 @@ for search_result in search_response.get('items', []):
         os.makedirs(output_path)
 
     downloaded_file = download_audio_from_youtube(video_url, output_path)
-
+    if not downloaded_file:
+      continue
     output_file_name = sanitized_video_title + '.wav'
     output_file_path = os.path.join(output_path, output_file_name)
     convert_mp4_to_wav(downloaded_file, output_file_path)
@@ -112,4 +117,4 @@ def process_directory(root_dir, segment_length_ms=30000, parallel_segments=2):
                 segment_audio_and_process(file_path, segment_length_ms=segment_length_ms, parallel_segments=parallel_segments)
 
 
-process_directory("D:\Youtube\Result")
+process_directory("Result")
